@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduConnect - Professional Tutoring Platform</title>
+
+```
+<!-- External Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
+<script src="https://apis.google.com/js/platform.js" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        line-height: 1.6;
+    }
+    
+    .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header h1 {
+        color: white;
+        font-size: 3em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        font-weight: 700;
+    }
+    
+    .header p {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.3em;
+        margin-bottom: 15px;
+    }
+    
+    .user-status {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 10px 20px;
+        border-radius: 50px;
+        display: inline-block;
+        color: white;
+        font-weight: 600;
+    }
+    
+    .owner-verification {
+        background: rgba(255, 193, 7, 0.15);
+        border: 2px solid rgba(255, 193, 7, 0.5);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .owner-verification h3 {
+        color: #856404;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .owner-input-group {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+    
+    .owner-input {
+        padding: 15px 20px;
+        border: 2px solid rgba(255, 193, 7, 0.5);
+        border-radius: 15px;
+        font-size: 16px;
+        min-width: 300px;
+        background: rgba(255, 255, 255, 0.9);
+        transition: all 0.3s ease;
+    }
+    
+    .owner-input:focus {
+        outline: none;
+        border-color: #ffc107;
+        box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+    }
+    
+    .verify-btn {
+        background: linear-gradient(135deg, #ffc107, #ffca2c);
+        color: #856404;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 15px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(255, 193, 7, 0.3);
+    }
+    
+    .verify-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+    }
+    
+    .auth-section {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 40px;
+        margin-bottom: 30px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    
+    .auth-buttons {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+    
+    .auth-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 18px 30px;
+        border: none;
+        border-radius: 50px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: white;
+        min-width: 220px;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .auth-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    
+    .auth-btn:hover::before {
+        left: 100%;
+    }
+    
+    .google-btn {
+        background: linear-gradient(135deg, #4285f4, #34a853);
+        box-shadow: 0 5px 15px rgba(66, 133, 244, 0.4);
+    }
+    
+    .apple-btn {
+        background: linear-gradient(135deg, #000, #333);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+    }
+    
+    .auth-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    .user-type {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+    
+    .user-type-btn {
+        padding: 15px 30px;
+        border: 2px solid #667eea;
+        background: transparent;
+        color: #667eea;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        font-size: 16px;
+    }
+    
+    .user-type-btn.active {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .admin-dashboard {
+        display: none;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 40px;
+        margin-bottom: 30px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    
+    .admin-dashboard.active {
+        display: block;
+    }
+    
+    .admin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 3px solid #dc3545;
+    }
+    
+    .admin-title {
+        color: #dc3545;
+        font-size: 2.2em;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .logout-btn {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+    }
+    
+    .logout-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 25px;
+        margin-bottom: 40px;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 20px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stat-number {
+        font-size: 3em;
+        font-weight: 700;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .stat-label {
+        font-size: 1.1em;
+        opacity: 0.9;
+        font-weight: 500;
+    }
+    
+    .admin-section {
+        background: rgba(248, 249, 250, 0.8);
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .admin-section h3 {
+        color: #333;
+        margin-bottom: 25px;
+        font-size: 1.5em;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #333;
+        font-weight: 600;
+        font-size: 16px;
+    }
+    
+    .form-group input, .form-group select, .form-group textarea {
+        width: 100%;
+        padding: 15px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        background: white;
+    }
+    
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+    
+    .btn-warning {
+        background: linear-gradient(135deg, #ffc107, #ffca2c);
+        color: #856404;
+    }
+    
+    .main-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .section {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        padding: 40px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+    }
+    
+    .section:hover {
+        transform: translateY(-5px);
+    }
+    
+    .section h2 {
+        color: #333;
+        margin-bottom: 25px;
+        font-size: 2em;
+        border-bottom: 3px solid #667eea;
+        padding-bottom: 15px;
+    }
+    
+    .tutor-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 25px;
+        margin-top: 20px;
+    }
+    
+    .tutor-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .tutor-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    }
+    
+    .tutor-name {
+        font-size: 1.3em;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .tutor-subject {
+        color: #667eea;
+        font-weight: 500;
+        margin-bottom: 15px;
+    }
+    
+    .tutor-rating {
+        color: #ffc107;
+        margin-bottom: 15px;
+    }
+    
+    .tutor-price {
+        color: #28a745;
+        font-weight: 600;
+        font-size: 1.2em;
+        margin-bottom: 20px;
+    }
+    
+    .payment-section {
+        background: rgba(40, 167, 69, 0.1);
+        border: 2px solid #28a745;
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .payment-header {
+        color: #28a745;
+        font-size: 1.5em;
+        font-weight: 600;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .stripe-element {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        border: 2px solid #e0e0e0;
+        margin-bottom: 20px;
+    }
+    
+    .booking-form {
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        margin-top: 20px;
+    }
+    
+    .loading {
+        display: none;
+        text-align: center;
+        padding: 20px;
+    }
+    
+    .loading.active {
+        display: block;
+    }
+    
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        border-radius: 10px;
+        color: white;
+        font-weight: 600;
+        z-index: 1000;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+    }
+    
+    .notification.show {
+        transform: translateX(0);
+    }
+    
+    .notification.success {
+        background: #28a745;
+    }
+    
+    .notification.error {
+        background: #dc3545;
+    }
+    
+    .notification.info {
+        background: #17a2b8;
+    }
+    
+    @media (max-width: 768px) {
+        .main-content {
+            grid-template-columns: 1fr;
+        }
+        
+        .auth-buttons {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .user-type {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .owner-input-group {
+            flex-direction: column;
+        }
+        
+        .owner-input {
+            min-width: 100%;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+```
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 EduConnect Pro</h1>
+            <p>Professional Tutoring Platform with Real Payments & Bookings</p>
+            <div id="userStatus" class="user-status" style="display: none;"></div>
+        </div>
+
+```
+    <!-- Loading Screen -->
+    <div class="loading" id="loadingScreen">
+        <div class="spinner"></div>
+        <p>Loading your platform...</p>
+    </div>
+
+    <!-- Owner Verification Section -->
+    <div class="owner-verification" id="ownerVerification">
+        <h3>🔐 Owner Access Panel</h3>
+        <p>Secure admin access for platform management</p>
+        <div class="owner-input-group">
+            <input type="password" id="ownerCode" placeholder="Enter secure owner access code" class="owner-input">
+            <button onclick="verifyOwner()" class="verify-btn">Verify Access</button>
+        </div>
+        <div class="form-group" style="margin-top: 20px;">
+            <label>📧 Owner Email Verification:</label>
+            <input type="email" id="ownerEmail" placeholder="Enter your registered owner email" class="owner-input">
+        </div>
+        <p style="font-size: 0.9em; color: #856404; margin-top: 20px; background: rgba(255,255,255,0.3); padding: 15px; border-radius: 10px;">
+            <strong>🔒 Security Access Codes:</strong><br>
+            • Primary: <code>OWNER2024</code><br>
+            • Secondary: <code>ADMIN_SECURE_123</code><br>
+            • Emergency: <code>SUPERUSER_OVERRIDE</code><br>
+            <em>⚠️ Change these codes immediately in production!</em>
+        </p>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div class="admin-dashboard" id="adminDashboard">
+        <div class="admin-header">
+            <div class="admin-title">
+                👑 Admin Control Center
+            </div>
+            <button onclick="logout()" class="logout-btn">🚪 Secure Logout</button>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalUsers">0</div>
+                <div class="stat-label">👥 Total Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalTutors">0</div>
+                <div class="stat-label">🎓 Active Tutors</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalEarnings">$0</div>
+                <div class="stat-label">💰 Total Revenue</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="pendingBookings">0</div>
+                <div class="stat-label">📅 Pending Bookings</div>
+            </div>
+        </div>
+
+        <div class="payment-section">
+            <div class="payment-header">
+                💳 Payment & Revenue Management
+            </div>
+            <div class="form-group">
+                <label>Commission Rate (%):</label>
+                <input type="number" id="commissionRate" value="15" min="0" max="50">
+            </div>
+            <div class="form-group">
+                <label>Stripe Publishable Key:</label>
+                <input type="text" id="stripeKey" placeholder="pk_live_...">
+            </div>
+            <div class="form-group">
+                <label>PayPal Client ID:</label>
+                <input type="text" id="paypalClientId" placeholder="Your PayPal Client ID">
+            </div>
+            <button onclick="updatePaymentSettings()" class="btn">💾 Update Payment Settings</button>
+        </div>
+
+        <div class="admin-section">
+            <h3>🔧 Platform Configuration</h3>
+            <div class="form-group">
+                <label>Platform Name:</label>
+                <input type="text" id="platformName" value="EduConnect Pro">
+            </div>
+            <div class="form-group">
+                <label>Support Email:</label>
+                <input type="email" id="supportEmail" placeholder="support@educonnect.com">
+            </div>
+            <div class="form-group">
+                <label>Maximum Booking Hours:</label>
+                <input type="number" id="maxBookingHours" value="8" min="1" max="12">
+            </div>
+            <button onclick="updatePlatformSettings()" class="btn">🔄 Update Settings</button>
+        </div>
+
+        <div class="admin-section">
+            <h3>📊 Real-Time Analytics</h3>
+            <div id="analyticsData">
+                <p>📈 Loading real-time data...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Authentication Section -->
+    <div class="auth-section" id="userAuthSection">
+        <h2 style="text-align: center; margin-bottom: 30px; color: #333;">🔐 Secure Login</h2>
+        <div class="auth-buttons">
+            <button class="auth-btn google-btn" onclick="signInWithGoogle()">
+                <span>📧</span> Continue with Google
+            </button>
+            <button class="auth-btn apple-btn" onclick="signInWithApple()">
+                <span>🍎</span> Continue with Apple
+            </button>
+        </div>
+        
+        <div class="user-type">
+            <button class="user-type-btn active" onclick="setUserType('student')">🎓 I'm a Student</button>
+            <button class="user-type-btn" onclick="setUserType('tutor')">👨‍🏫 I'm a Tutor</button>
+            <button class="user-type-btn" onclick="setUserType('parent')">👨‍👩‍👧‍👦 I'm a Parent</button>
+        </div>
+    </div>
+
+    <!-- Main Platform Content -->
+    <div class="main-content" id="mainContent">
+        <div class="section">
+            <h2>🔍 Find Expert Tutors</h2>
+            <div class="form-group">
+                <input type="text" id="searchSubject" placeholder="Search by subject (Math, Science, English...)">
+            </div>
+            <div class="form-group">
+                <select id="priceRange">
+                    <option value="">Any Price Range</option>
+                    <option
+```
